@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { MoreHorizontal } from "lucide-react";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import * as z from "zod";
-import React from "react";
+import React, { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import supabase from "@/lib/supahase";
 import { useUser } from "@clerk/nextjs";
@@ -35,8 +36,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQuery, useQueryClient } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { DataTable } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const categories = [
   { label: "3D", value: "3D" },
@@ -48,27 +58,6 @@ const categories = [
   { label: "Fitness and Health", value: "Fitness and Health" },
 ];
 
-const formSchema = z.object({
-  name: z.string().min(5, {
-    message: "Product name must be at least 5 characters.",
-  }),
-  price: z.string().min(1, {
-    message: "Insert 0 if your product is free",
-  }),
-  description: z.string().min(1, {
-    message: "Product description is required",
-  }),
-  thumbnail: z.string().min(1, {
-    message: "Product thumbnail is required",
-  }),
-  resource: z.string().min(1, {
-    message: "Product resource is required",
-  }),
-  category: z.string().min(1, {
-    message: "Product category is required",
-  }),
-});
-
 const DashboardProducts = () => {
   const queryClient = useQueryClient();
   const [loadingThumbnail, setLoadingThumbnail] = useState(false);
@@ -76,6 +65,42 @@ const DashboardProducts = () => {
   const [loadingUploadProduct, setLoadingUploadProduct] = useState(false);
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const formSchema = z.object({
+    name: z.string().min(5, {
+      message: "Product name must be at least 5 characters.",
+    }),
+    price: z.string().min(1, {
+      message: "Insert 0 if your product is free",
+    }),
+    description: z.string().min(1, {
+      message: "Product description is required",
+    }),
+    ...(selectedProduct
+      ? {
+          thumbnail: z.string(),
+        }
+      : {
+          thumbnail: z.string().min(1, {
+            message: "Product thumbnail is required",
+          }),
+        }),
+    ...(selectedProduct
+      ? {
+          resource: z.string(),
+        }
+      : {
+          resource: z.string().min(1, {
+            message: "Product resource is required",
+          }),
+        }),
+    category: z.string().min(1, {
+      message: "Product category is required",
+    }),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -117,6 +142,18 @@ const DashboardProducts = () => {
     } finally {
       setLoadingUploadProduct(false);
     }
+  };
+
+  const onUpdate = async (values) => {
+    updateProductMutation({
+      id: selectedProduct.id,
+      newData: Object.keys(values).reduce((acc, cur) => {
+        if (!!values[cur]) {
+          acc[cur] = values[cur];
+        }
+        return acc;
+      }, {}),
+    });
   };
 
   const handleUploadThumbnail = async (e) => {
@@ -169,6 +206,10 @@ const DashboardProducts = () => {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    deleteProductMutation(selectedProduct.id);
+  };
+
   const { data } = useQuery({
     queryKey: [user?.id, "products"],
     queryFn: async () => {
@@ -176,6 +217,43 @@ const DashboardProducts = () => {
     },
     enabled: !!user,
   });
+
+  const { mutate: deleteProductMutation, isLoading: loadingDeleteProduct } =
+    useMutation({
+      mutationFn: async (productId) => {
+        return await supabase.from("product").delete().eq("id", productId);
+      },
+      onSuccess: () => {
+        setSelectedProduct(null);
+        setDeleteDialogOpen(false);
+        queryClient.invalidateQueries([user.id, "products"]);
+      },
+    });
+
+  const { mutate: updateProductMutation, isLoading: loadingUpdateProduct } =
+    useMutation({
+      mutationFn: async (params: {
+        id: string;
+        newData: Record<string, string>;
+      }) => {
+        return await supabase
+          .from("product")
+          .update(params.newData)
+          .eq("id", params.id)
+          .select("*");
+      },
+      onSuccess: () => {
+        setSelectedProduct(null);
+        setUploadDialogOpen(false);
+        queryClient.invalidateQueries([user.id, "products"]);
+      },
+    });
+
+  useEffect(() => {
+    if (!uploadDialogOpen) {
+      form.reset();
+    }
+  }, [uploadDialogOpen, form]);
 
   return (
     <DashboardLayout>
@@ -185,7 +263,9 @@ const DashboardProducts = () => {
         <div>
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button>+ Add New</Button>
+              <Button onClick={() => setSelectedProduct(null)}>
+                + Add New
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px]">
               <DialogHeader>
@@ -197,7 +277,9 @@ const DashboardProducts = () => {
               </DialogHeader>
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit(onSubmit)}
+                  onSubmit={form.handleSubmit(
+                    selectedProduct ? onUpdate : onSubmit
+                  )}
                   className="space-y-6"
                 >
                   <div className="grid grid-cols-2 gap-x-6">
@@ -261,7 +343,7 @@ const DashboardProducts = () => {
                           <FormItem>
                             <FormLabel>
                               <div className="flex items-center">
-                                Product Thumbnail{" "}
+                                {selectedProduct && "New "}Product Thumbnail{" "}
                                 {loadingThumbnail && (
                                   <div className="text-xs text-gray-600 ml-2 italic">
                                     uploading...
@@ -293,7 +375,7 @@ const DashboardProducts = () => {
                           <FormItem>
                             <FormLabel>
                               <div className="flex items-center">
-                                Product File{" "}
+                                {selectedProduct && "New "}Product File{" "}
                                 {loadingResource && (
                                   <div className="text-xs text-gray-600 ml-2 italic">
                                     uploading...
@@ -309,9 +391,6 @@ const DashboardProducts = () => {
                                 onChange={handleUploadResource}
                               />
                             </FormControl>
-                            {/* <FormDescription>
-                              Product file that will be sent to customer
-                            </FormDescription> */}
                             <FormMessage />
                           </FormItem>
                         )}
@@ -352,9 +431,15 @@ const DashboardProducts = () => {
                     </div>
                   </div>
                   <div className="flex items-center justify-end">
-                    <Button type="submit">
-                      {loadingUploadProduct ? "Publishing.." : "Publish"}
-                    </Button>
+                    {selectedProduct ? (
+                      <Button type="submit">
+                        {loadingUpdateProduct ? "Updating.." : "Update"}
+                      </Button>
+                    ) : (
+                      <Button type="submit">
+                        {loadingUploadProduct ? "Publishing.." : "Publish"}
+                      </Button>
+                    )}
                   </div>
                 </form>
               </Form>
@@ -387,10 +472,87 @@ const DashboardProducts = () => {
               accessorKey: "description",
               header: () => <div className="text-left">Description</div>,
             },
+            {
+              accessorKey: "category",
+              header: () => <div className="text-left">Description</div>,
+              cell: ({ row }) => {
+                return <Badge>{row.original.category}</Badge>;
+              },
+            },
+            {
+              accessorKey: "action",
+              header: () => <div className="text-left">Action</div>,
+              cell: ({ row }) => {
+                const payment = row.original;
+
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Product Actions</DropdownMenuLabel>
+                      <DropdownMenuItem>View Detail</DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedProduct(row.original);
+                          form.setValue("name", row.original.name);
+                          form.setValue("price", String(row.original.price));
+                          form.setValue(
+                            "description",
+                            row.original.description
+                          );
+                          form.setValue("category", row.original.category);
+                          setUploadDialogOpen(true);
+                        }}
+                      >
+                        Edit Product
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedProduct(row.original);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              },
+            },
           ]}
-          data={data.data}
+          data={data?.data || []}
         />
       </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure absolutely sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete your
+              product and remove all sales data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProduct}>
+              {loadingDeleteProduct ? "Deleting.." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
