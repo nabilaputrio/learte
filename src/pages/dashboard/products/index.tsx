@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/router";
 
 const categories = [
   { label: "3D", value: "3D" },
@@ -68,11 +69,17 @@ const DashboardProducts = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const router = useRouter();
 
   const formSchema = z.object({
-    name: z.string().min(5, {
-      message: "Product name must be at least 5 characters.",
-    }),
+    name: z
+      .string()
+      .min(5, {
+        message: "Product name must be at least 5 characters.",
+      })
+      .max(50, {
+        message: "Product name must be less that 50 characters",
+      }),
     price: z.string().min(1, {
       message: "Insert 0 if your product is free",
     }),
@@ -454,6 +461,19 @@ const DashboardProducts = () => {
             {
               accessorKey: "name",
               header: () => <div className="text-left">Name</div>,
+              cell: ({ row }) => {
+                return (
+                  <div
+                    role="button"
+                    onClick={() => {
+                      router.push(`/dashboard/products/${row.original.id}`);
+                    }}
+                    className="whitespace-nowrap line-clamp-1"
+                  >
+                    {String(row.original.name).slice(0.1)}
+                  </div>
+                );
+              },
             },
             {
               accessorKey: "price",
@@ -471,12 +491,23 @@ const DashboardProducts = () => {
             {
               accessorKey: "description",
               header: () => <div className="text-left">Description</div>,
+              cell: ({ row }) => {
+                return (
+                  <div className="line-clamp-1">
+                    {String(row.original.description)}
+                  </div>
+                );
+              },
             },
             {
               accessorKey: "category",
               header: () => <div className="text-left">Description</div>,
               cell: ({ row }) => {
-                return <Badge>{row.original.category}</Badge>;
+                return (
+                  <Badge className="whitespace-nowrap">
+                    {row.original.category}
+                  </Badge>
+                );
               },
             },
             {
@@ -495,7 +526,13 @@ const DashboardProducts = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Product Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>View Detail</DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(`/dashboard/products/${row.original.id}`);
+                        }}
+                      >
+                        View Detail
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
                           setSelectedProduct(row.original);
