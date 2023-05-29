@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/layout/DashboardLayout";
-import supabase from "@/lib/supahase";
+import supabase from "@/lib/supabase";
 import {
   formatRupiah,
   getResourceDownloadUrl,
@@ -11,7 +12,16 @@ import { useUser } from "@clerk/nextjs";
 import { ChevronRight, DownloadCloud } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useMutation, useQuery } from "react-query";
+import { useQuery } from "react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Overview } from "@/components/overview";
+import { RecentSales } from "@/components/recent-sales";
 
 const ProductDetail = () => {
   const router = useRouter();
@@ -90,6 +100,36 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+          <Tabs defaultValue="sales">
+            <TabsList>
+              <TabsTrigger value="sales">Sales Data</TabsTrigger>
+              <TabsTrigger value="review">Product Review</TabsTrigger>
+            </TabsList>
+            <TabsContent value="sales">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="col-span-4">
+                  <CardHeader>
+                    <CardTitle>Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pl-2">
+                    <Overview />
+                  </CardContent>
+                </Card>
+                <Card className="col-span-3">
+                  <CardHeader>
+                    <CardTitle>Recent Sales</CardTitle>
+                    <CardDescription>
+                      You made 265 sales this month.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RecentSales />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="review">Review</TabsContent>
+          </Tabs>
         </>
       )}
     </DashboardLayout>

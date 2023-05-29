@@ -26,7 +26,7 @@ import {
 import * as z from "zod";
 import React, { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import supabase from "@/lib/supahase";
+import supabase from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import {
@@ -49,7 +49,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/router";
 
-const categories = [
+export const categories = [
   { label: "3D", value: "3D" },
   { label: "Self-Development", value: "Self-Development" },
   { label: "Comic and Graphic", value: "Comic and Graphic" },
