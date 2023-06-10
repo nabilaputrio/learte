@@ -13,9 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getThumbnailUrl } from "@/lib/utils";
+import { formatRupiah } from "@/lib/utils";
+import { Star, StarHalf, StarIcon } from "lucide-react";
+import { useRouter } from "next/router";
 
 const Products = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const router = useRouter();
 
   const changeCategoryFilter = (key) => {
     setActiveTab(key);
@@ -62,15 +66,36 @@ const Products = () => {
         <div className="mt-4 grid grid-cols-5 gap-3">
           {products?.data?.map((item) => {
             return (
-              <Card key={item.id}>
+              <Card
+                key={item.id}
+                className="flex flex-col"
+                onClick={() => {
+                  router.push(`/products/${item.id}`);
+                }}
+              >
                 <div className="overflow-hidden">
                   <img
                     className="w-full h-[250px] object-cover"
                     src={getThumbnailUrl(item.thumbnail)}
                   />
                 </div>
-                <div className="p-4">
-                  <h1 className="font-bold text-lg">{item.name}</h1>
+                <div className="p-4 flex flex-col justify-between flex-grow">
+                  <h1 className="font-bold text-md">{item.name}</h1>
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <StarIcon
+                        className="text-[#FAB005]"
+                        fill="#FAB005"
+                        size={12}
+                      />
+                      <span className="text-xs text-gray-500">
+                        213 - 1,288 Buyers
+                      </span>
+                    </div>
+                    <div className="text-left mt-2">
+                      {formatRupiah(item.price)}
+                    </div>
+                  </div>
                 </div>
                 {/* <CardHeader>
                   <CardTitle>{item.name}</CardTitle>
