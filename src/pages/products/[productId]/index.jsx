@@ -11,7 +11,7 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { ChevronRight, DownloadCloud } from "lucide-react";
+import { ChevronRight, DownloadCloud, DownloadCloudIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,26 @@ const ProductDetail = () => {
       }
     },
   });
+
+  const handleDownloadProduct = () => {
+    window.open(getResourceDownloadUrl(product.resource), "_blank");
+  };
+
+  const { data: purchase } = useQuery({
+    queryKey: ["product", query?.productId, "purchse", userId],
+    queryFn: async () => {
+      return supabase
+        .from("purchases")
+        .select("*")
+        .eq("product_id", query?.productId)
+        .eq("user_id", userId)
+        .eq("status", "PAID");
+    },
+    enabled: Boolean(!!query?.productId && userId),
+  });
+
+  const purchased = purchase && purchase?.data?.length > 0;
+  const ownProduct = data?.data?.[0]?.user_id === userId;
 
   const handleClickBuy = () => {
     if (!userId) {
@@ -137,18 +157,30 @@ const ProductDetail = () => {
                 <div className="mt-2">
                   <div className="text-base">{product.description}</div>
                 </div>
-                <div>
-                  <div className="text-xl font-semibold pt-2 flex items-center gap-3">
-                    <Button
-                      //   variant="outline"
-                      className="flex items-center gap-2 w-full"
-                      onClick={handleClickBuy}
-                      disable={creatingInvoice}
-                    >
-                      {creatingInvoice ? "Loading.." : "Buy Now"}
-                    </Button>
+                {!ownProduct && (
+                  <div>
+                    <div className="text-xl font-semibold pt-2 flex items-center gap-3">
+                      {purchased ? (
+                        <Button
+                          className="flex items-center gap-2 w-full"
+                          onClick={handleDownloadProduct}
+                        >
+                          <DownloadCloudIcon />
+                          <span>Download</span>
+                        </Button>
+                      ) : (
+                        <Button
+                          //   variant="outline"
+                          className="flex items-center gap-2 w-full"
+                          onClick={handleClickBuy}
+                          disable={creatingInvoice}
+                        >
+                          {creatingInvoice ? "Loading.." : "Buy Now"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </>
