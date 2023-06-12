@@ -1,6 +1,6 @@
 import PublicLayout from "@/layout/PublicLayout";
 import { useRouter } from "next/router";
-import { useMutation, useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import supabase from "@/lib/supabase";
 
 import {
@@ -11,16 +11,24 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { ChevronRight, DownloadCloud, DownloadCloudIcon } from "lucide-react";
+import {
+  ChevronRight,
+  DownloadCloud,
+  DownloadCloudIcon,
+  StarIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
+import { useState } from "react";
 
 const ProductDetail = () => {
   const router = useRouter();
+  const [selectedRating, setSelectedRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
 
   const { query } = router;
   const { data, isLoading: loadingProductData } = useQuery({
@@ -35,6 +43,7 @@ const ProductDetail = () => {
 
   const { userId } = useAuth();
   const { user } = useUser();
+  const client = useQueryClient();
 
   const { mutate: createInvoice, isLoading: creatingInvoice } = useMutation({
     mutationFn: async () => {
@@ -71,12 +80,23 @@ const ProductDetail = () => {
     },
   });
 
+  const { mutate: submitReview, isLoading: submittingReview } = useMutation({
+    mutationFn: async (payload) => {
+      return await supabase.from("reviews").insert([payload]).select("*");
+    },
+    onSuccess: () => {
+      client.invalidateQueries({
+        queryKey: ["product", query?.productId, "reviews"],
+      });
+    },
+  });
+
   const handleDownloadProduct = () => {
     window.open(getResourceDownloadUrl(product.resource), "_blank");
   };
 
   const { data: purchase } = useQuery({
-    queryKey: ["product", query?.productId, "purchse", userId],
+    queryKey: ["product", query?.productId, "purchase", userId],
     queryFn: async () => {
       return supabase
         .from("purchases")
@@ -90,6 +110,26 @@ const ProductDetail = () => {
 
   const purchased = purchase && purchase?.data?.length > 0;
   const ownProduct = data?.data?.[0]?.user_id === userId;
+
+  const { data: reviews } = useQuery({
+    queryKey: ["product", query?.productId, "reviews"],
+    queryFn: async () => {
+      return supabase
+        .from("reviews")
+        .select("*")
+        .eq("product_id", query?.productId);
+    },
+  });
+
+  const totalRating =
+    reviews?.data?.length > 0
+      ? reviews.data.reduce((acc, cur) => acc + cur.rating, 0) /
+        reviews.data.length
+      : 0;
+  const userHasReviewed =
+    reviews &&
+    reviews.data.length > 0 &&
+    reviews.data.filter((item) => item.user_id === userId).length > 0;
 
   const handleClickBuy = () => {
     if (!userId) {
@@ -110,7 +150,7 @@ const ProductDetail = () => {
         {loadingProductData ? (
           <>Loading..</>
         ) : (
-          <>
+          <div className="max-w-[1300px] mx-auto">
             <div className="flex items-center gap-2">
               <Link href="/products">Products</Link>
               <ChevronRight className="w-4 h-4" />
@@ -183,7 +223,116 @@ const ProductDetail = () => {
                 )}
               </div>
             </div>
-          </>
+            <div className="mt-6">
+              <h1 className="font-semibold text-xl">Reviews</h1>
+              <div className="mt-6 grid grid-cols-4 gap-5">
+                <div className="rounded-lg flex flex-col justify-start items-center">
+                  <div className="bg-gray-50 rounded-lg w-full py-20 flex items-center justify-center">
+                    <div className="flex items-center">
+                      <StarIcon size={40} color="transparent" fill="orange" />
+                      <div className="flex items-end leading-none ml-2">
+                        <div className="text-[80px]">{totalRating}</div>
+                        <div className="text-lg pb-1"> / 5</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-span-3">
+                  {purchased && !userHasReviewed && (
+                    <div className="mb-4 pb-4 border-b">
+                      <div>
+                        <h3 className="font-medium">Add your review</h3>
+                        <div className="flex items-center gap-1 mt-3">
+                          {new Array(5).fill(null).map((_, idx) => (
+                            <StarIcon
+                              size={28}
+                              key={idx + 1}
+                              color="transparent"
+                              fill={
+                                selectedRating >= idx + 1 ? "orange" : "gray"
+                              }
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedRating(idx + 1);
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <div>
+                          <textarea
+                            rows={5}
+                            className="w-full border mt-3 border-gray-400 p-2 rounded"
+                            placeholder="Write your review here"
+                            value={reviewText}
+                            onChange={(e) => setReviewText(e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          className="flex items-center mt-2 w-full"
+                          type="button"
+                          onClick={() => {
+                            if (!reviewText) alert("Please write review");
+                            else {
+                              const payload = {
+                                rating: selectedRating,
+                                content: reviewText,
+                                product_id: query?.productId,
+                                user_name: user.fullName,
+                                user_avatar: user.imageUrl,
+                                user_id: user.id,
+                              };
+                              submitReview(payload);
+                            }
+                          }}
+                        >
+                          {submittingReview ? "Loading..." : "Submit"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {reviews?.data?.length > 0 ? (
+                    <>
+                      {reviews.data.map((item) => {
+                        return (
+                          <div
+                            className="border border-gray-200 p-3 rounded mb-3"
+                            key={item.id}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                {new Array(5).fill(null).map((_, idx) => (
+                                  <StarIcon
+                                    size={20}
+                                    key={idx + 1}
+                                    color="transparent"
+                                    fill={
+                                      item.rating >= idx + 1 ? "orange" : "gray"
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="mt-3 flex items-center gap-3">
+                              <img
+                                src={item.user_avatar}
+                                className="w-8 h-8 rounded-full bg-gray-500"
+                              />
+                              <span className="font-medium">
+                                {item.user_name}
+                              </span>
+                            </div>
+                            <div className="mt-3">{item.content}</div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    "No Review Yet"
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </PublicLayout>
     </div>
