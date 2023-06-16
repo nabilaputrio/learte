@@ -23,6 +23,7 @@ import { Overview } from "@/components/overview";
 import { RecentSales } from "@/components/recent-sales";
 import { Search } from "@/components/search";
 import { UserNav } from "@/components/user-nav";
+import Link from "next/link";
 
 export const metadata = {
   title: "Dashboard",
@@ -51,7 +52,9 @@ export default function DashboardPage() {
       <div className="hidden flex-col md:flex">
         <div className="border-b">
           <div className="flex h-16 items-center px-4">
-            <h1 className="font-bold text-xl">LeArté</h1>
+            <Link href="/" className="font-bold text-xl">
+              LeArté
+            </Link>
             <MainNav className="mx-6" />
             <div className="ml-auto flex items-center space-x-4">
               <Search />
