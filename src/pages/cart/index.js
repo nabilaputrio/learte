@@ -23,15 +23,9 @@ const CartPage = () => {
     enabled: !!userId,
   });
 
-  console.log(purchases);
-
-  console.log(
-    new Date().getTime() >
-      new Date(purchases?.data?.[0]?.created_at).getTime() + 86400000
-  );
   return (
     <PublicLayout>
-      <h1 className="font-bold text-lg">Cart Page</h1>
+      <h1 className="font-bold text-lg">My Purchases</h1>
       <div className="mt-3">
         {purchases?.data?.length === 0 ? (
           "You have not made any purchase"

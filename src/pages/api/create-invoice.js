@@ -37,6 +37,9 @@ export default async function handler(req, res) {
             status: status,
             total: amount,
             invoice_id: id,
+            email: customer.email,
+            avatar: customer.avatar,
+            name: customer.surname,
           },
         ])
         .select();

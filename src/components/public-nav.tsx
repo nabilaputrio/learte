@@ -14,11 +14,20 @@ const publicLinks = [
     label: "Dashboard",
     private: true,
   },
+  {
+    path: "/admin/overview",
+    label: "Admin Dashboard",
+    private: true,
+    adminAccess: true,
+  },
 ];
 
 export function PublicNav({ className, ...props }) {
   const router = useRouter();
   const { isSignedIn } = useUser();
+  const { user } = useUser();
+
+  const adminWhitelist = ["user_2RHQlys0DxiYbLaZr65dwE1WjTR"];
 
   return (
     <nav
@@ -29,6 +38,8 @@ export function PublicNav({ className, ...props }) {
         .filter((item) => {
           if (!isSignedIn) {
             return !item.private;
+          } else if (item.adminAccess) {
+            return adminWhitelist.includes(user.id);
           }
           return true;
         })

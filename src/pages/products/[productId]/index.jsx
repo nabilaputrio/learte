@@ -66,6 +66,7 @@ const ProductDetail = () => {
             customer: {
               surname: user.fullName,
               email: user.primaryEmailAddress.emailAddress,
+              avatar: user.imageUrl,
             },
           },
         },
