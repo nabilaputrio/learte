@@ -1,9 +1,26 @@
 "use client";
 
 import React from "react";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useQuery } from "react-query";
 import supabase from "@/lib/supabase";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { formatRupiah } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
+
+const months = {
+  1: "Jan",
+  2: "Feb",
+  3: "Mar",
+  4: "Apr",
+  5: "May",
+  6: "Jun",
+  7: "Jul",
+  8: "Aug",
+  9: "Sep",
+  10: "Okt",
+  11: "Nov",
+  12: "Des",
+};
 
 const data = [
   {
@@ -57,29 +74,69 @@ const data = [
 ];
 
 export function Overview() {
-  const { data: sales, isLoading: loadingSales } = useQuery({
-    queryKey: ["admin", "salesChart"],
+  const { user } = useUser();
+  const { id = null } = user ?? {};
+
+  const { data: productsNumber, isLoading: loadingProductNumber } = useQuery({
+    queryKey: ["seller", "productNumber"],
     queryFn: async () => {
-      return await supabase.from("group_purchases_by_created_at");
+      return await supabase.from("product").select("*").eq("user_id", id);
     },
+    enabled: Boolean(!!id),
   });
 
+  const productIds = productsNumber?.data?.map((item) => {
+    return item.id;
+  });
+
+  const { data: sales, isLoading: loadingSales } = useQuery({
+    queryKey: ["seller", "salesChart", id],
+    queryFn: async () => {
+      return await supabase
+        .from("purchases")
+        .select("*")
+        .in("product_id", productIds);
+    },
+    enabled: Boolean(productIds && productIds?.length > 0),
+  });
+
+  const purchaseData = sales?.data?.reduce((acc, cur) => {
+    const purchaseDate = new Date(cur.created_at).getDate();
+    const purchaseMonth = new Date(cur.created_at).getMonth();
+    if (!acc[`${purchaseDate}-${purchaseMonth}`]) {
+      acc[`${purchaseDate}-${purchaseMonth}`] = cur.total;
+    } else {
+      acc[`${purchaseDate}-${purchaseMonth}`] += cur.total;
+    }
+    return acc;
+  }, {});
+
+  const dataKeys = Object.keys(purchaseData ?? {})
+    .reverse()
+    .slice(0, 30)
+    .reverse();
+  const chartData = dataKeys.map((key) => {
+    return {
+      name: `${key.split("-")[0]} ${months[key.split("-")[1]]}`,
+      total: purchaseData[key],
+    };
+  });
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
+      <BarChart data={chartData}>
         <XAxis
           dataKey="name"
           stroke="#888888"
-          // fontSize={12}
+          fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
           stroke="#888888"
-          // fontSize={12}
+          fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `${formatRupiah(value)}`}
         />
         <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
       </BarChart>

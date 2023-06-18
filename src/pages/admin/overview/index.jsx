@@ -85,7 +85,6 @@ export default function DashboardPage() {
       });
     },
   });
-  console.log(recentSalesData);
 
   const frequentProduct = frequentProductData?.data?.[0];
 
