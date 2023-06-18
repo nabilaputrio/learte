@@ -16,8 +16,8 @@ export default async function handler(req, res) {
     const resp = await i.createInvoice({
       externalID: purchaseId,
       currency: "IDR",
-      success_redirect_url: "https://www.google.com",
-      failure_redirect_url: "https://www.google.com",
+      success_redirect_url: "https://learte-kappa.vercel.app/cart",
+      failure_redirect_url: "https://learte-kappa.vercel.app/cart",
       invoiceDuration: 86400,
       amount,
       items,
