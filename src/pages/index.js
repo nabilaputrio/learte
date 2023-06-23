@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Inter } from "next/font/google";
 import styles from "@/styles/Home.module.css";
 import PublicLayout from "../layout/PublicLayout";
+import { LandingPage } from "../components/LandingPage/LandingPage";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +17,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <PublicLayout>
-        <main className={styles.main}>
+        {/* <main className={styles.main}>
           <div className={styles.description}>
             <p>
               Get started by editing&nbsp;
@@ -119,7 +120,8 @@ export default function Home() {
               </p>
             </a>
           </div>
-        </main>
+        </main> */}
+        <LandingPage />
       </PublicLayout>
     </>
   );

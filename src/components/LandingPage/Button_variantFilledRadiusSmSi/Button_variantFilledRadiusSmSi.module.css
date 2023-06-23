@@ -1,0 +1,28 @@
+.root {
+  position: relative;
+  width: 98px;
+  height: 45px;
+  align-items: flex-start;
+}
+.buttonFilledSMFalseFalseFalseD {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min-content;
+  height: min-content;
+  padding: 10px 22px;
+  border-radius: 4px;
+  background-color: #25262b;
+}
+.button {
+  color: #fff;
+  font-size: 16px;
+  line-height: 155%;
+  font-weight: 600;
+  font-family: Open Sans, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans',
+    'Liberation Sans', sans-serif;
+  width: min-content;
+  height: min-content;
+  white-space: nowrap;
+  flex-direction: column;
+}

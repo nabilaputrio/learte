@@ -61,15 +61,15 @@ export default function DashboardPage() {
     enabled: Boolean(!!id),
   });
 
+  const productIds = productsNumber?.data?.map((item) => {
+    return item.id;
+  });
+
   const { data: customerData, isLoading: loadingCustomerData } = useQuery({
     queryKey: ["seller", "customerCount"],
     queryFn: async () => {
       return await supabase.rpc("count_distinct_users");
     },
-  });
-
-  const productIds = productsNumber?.data?.map((item) => {
-    return item.id;
   });
 
   const { data: salesNumber, isLoading: loadingSalesNumber } = useQuery({
@@ -177,7 +177,7 @@ export default function DashboardPage() {
             </Link>
             <MainNav className="mx-6" />
             <div className="ml-auto flex items-center space-x-4">
-              <Search />
+              {/* <Search /> */}
               <UserNav />
             </div>
           </div>
