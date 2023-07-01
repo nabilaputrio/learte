@@ -134,6 +134,10 @@ const ProductDetail = () => {
 
   const handleClickBuy = () => {
     if (!userId) {
+      const baseUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000"
+          : "https://learte-kappa.vercel.app";
       const encodedUrl = encodeURIComponent(
         "http://localhost:3000" + router.asPath
       );
@@ -214,7 +218,7 @@ const ProductDetail = () => {
                           //   variant="outline"
                           className="flex items-center gap-2 w-full"
                           onClick={handleClickBuy}
-                          disable={creatingInvoice}
+                          disabled={creatingInvoice}
                         >
                           {creatingInvoice ? "Loading.." : "Buy Now"}
                         </Button>
