@@ -48,6 +48,7 @@ export default async function handler(req, res) {
         data: purchase,
         invoiceUrl: invoice_url,
       });
+      return;
     }
 
     res.status(500).json({ message: "Failed to create order" });
