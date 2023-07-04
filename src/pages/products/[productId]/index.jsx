@@ -50,7 +50,7 @@ const ProductDetail = () => {
       return await axios.post("/api/create-invoice", {
         data: {
           payload: {
-            amount: 10000,
+            amount: product.price,
             items: [
               {
                 name: product.name,
