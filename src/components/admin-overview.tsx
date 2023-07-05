@@ -99,6 +99,25 @@ export function AdminOverview() {
       total: purchaseData[key],
     };
   });
+
+  function formatNumber(num) {
+    if (Math.abs(num) < 9999) {
+      return num;
+    }
+
+    if (Math.abs(num) < 999999) {
+      const formattedNum = (num / 1000).toFixed(1);
+      return formattedNum.endsWith(".0")
+        ? formattedNum.slice(0, -2) + "K"
+        : formattedNum + "K";
+    }
+
+    const formattedNum = (num / 1000000).toFixed(1);
+    return formattedNum.endsWith(".0")
+      ? formattedNum.slice(0, -2) + "M"
+      : formattedNum + "M";
+  }
+  console.log(chartData);
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={chartData}>
@@ -114,7 +133,7 @@ export function AdminOverview() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `${formatRupiah(value)}`}
+          tickFormatter={(value) => `${formatNumber(value)}`}
         />
         <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
       </BarChart>
